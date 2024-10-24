@@ -20,14 +20,7 @@ warn() {
 
 # 清理函数
 cleanup() {
-    log "清理可能的残留文件..."
-    # 停止可能运行的 n8n 进程
-    if pgrep -f "n8n" > /dev/null; then
-        log "停止运行中的 n8n 进程..."
-        pkill -f "n8n"
-        sleep 2
-    fi
-    
+    log "清理可能的残留文件..."  
     rm -rf "$USER_HOME/.local/share/pnpm/global/5/node_modules"
     rm -rf "$USER_HOME/.local/share/pnpm/global/5/.pnpm"
     rm -rf "$USER_HOME/.local/share/pnpm/store"
@@ -269,6 +262,16 @@ set_cronjob() {
     log "定时任务设置完成"
 }
 
+# 检查并停止已存在的 n8n 进程
+check_n8n_process() {
+    log "检查并停止已存在的 n8n 进程..."
+    if pgrep -f "n8n" > /dev/null; then
+        log "停止运行中的 n8n 进程..."
+        pkill -f "n8n"
+        sleep 2
+    fi
+}
+
 # 主安装流程
 main() {
 
@@ -328,7 +331,6 @@ main() {
     
     update_profile
     re_source
-    
     show_completion_message
     
     # 检查并停止已存在的 n8n 进程

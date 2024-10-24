@@ -42,17 +42,18 @@ git clone https://github.com/aigem/n8n-serv00.git && cd n8n-serv00 && bash i.sh
 - 包含数字
 - 包含特殊字符
 
-### 常见问题
+## 安装后配置
 
-1. 端口占用问题：
-   - 如果提示端口已被占用，脚本会自动尝试使用其他端口
-   - 也可以手动终止已运行的 n8n 进程：`pkill -f "n8n"`
+安装完成后，退出脚本后，需要运行以下命令使环境变量生效：
 
-2. 手动启动/停止 n8n：
-   ```bash
-   # 停止 n8n
-   pkill -f "n8n"
-   
-   # 启动 n8n
-   n8n start
-   ```
+```bash
+source ~/.bash_profile
+source ~/.bashrc
+```
+
+然后验证安装：
+
+```bash
+pnpm --version  # 应该显示 pnpm 版本
+n8n --version   # 应该显示 n8n 版本
+```
