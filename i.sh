@@ -21,6 +21,13 @@ warn() {
 # 清理函数
 cleanup() {
     log "清理可能的残留文件..."
+    # 停止可能运行的 n8n 进程
+    if pgrep -f "n8n" > /dev/null; then
+        log "停止运行中的 n8n 进程..."
+        pkill -f "n8n"
+        sleep 2
+    fi
+    
     rm -rf "$USER_HOME/.local/share/pnpm/global/5/node_modules"
     rm -rf "$USER_HOME/.local/share/pnpm/global/5/.pnpm"
     rm -rf "$USER_HOME/.local/share/pnpm/store"
@@ -249,6 +256,9 @@ show_completion_message() {
         log "数据库密码: **********"
     fi
     log "配置文件位置: $PROFILE"
+    log "退出脚本后，请运行以下命令使环境变量生效："
+    warn "source ~/.bash_profile"
+    warn "source ~/.bashrc"
 }
 
 set_cronjob() {
@@ -303,9 +313,6 @@ main() {
     re_source
     
     log "安装 n8n..."
-    # 清理可能存在的旧虚拟存储
-    rm -rf "$USER_HOME/.local/share/pnpm/global/5/node_modules"
-    rm -rf "$USER_HOME/.local/share/pnpm/global/5/.pnpm"
     
     # 设置 pnpm 存储路径
     pnpm config set store-dir "$USER_HOME/.local/share/pnpm/store"
@@ -323,6 +330,9 @@ main() {
     re_source
     
     show_completion_message
+    
+    # 检查并停止已存在的 n8n 进程
+    check_n8n_process
     
     log "启动 n8n..."
     n8n start

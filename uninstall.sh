@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source ~/.bash_profile
+source ~/.bashrc
+
 pnpm uninstall -g n8n
 npm uninstall -g pnpm
 
@@ -16,5 +19,6 @@ rm -rf /usr/home/$(whoami)/.npm-global/lib/node_modules/pnpm
 rm -rf /usr/home/$(whoami)/n8n
 rm -rf /usr/home/$(whoami)/.local/share/pnpm/global/5/node_modules
 rm -rf /usr/home/$(whoami)/.local/share/pnpm/global/5/.pnpm
+rm -rf /usr/home/$(whoami)/.n8n
 
 echo "卸载完成"
