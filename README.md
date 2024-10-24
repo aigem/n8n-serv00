@@ -2,7 +2,7 @@
 
 这是一个用于在 serv00 免费主机上自动安装和配置 N8N 的脚本工具。
 
-【[视频教程](/)】
+【[视频教程](https://www.bilibili.com/video/BV1e6sVeEEhR/)】【[一键在Huggingface上使用N8N](https://www.bilibili.com/video/BV1e6sVeEEhR/)】
 
 ## 功能特点
 
