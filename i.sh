@@ -244,12 +244,11 @@ show_completion_message() {
     log "端口: ${N8N_PORT}"
     log "数据库类型: ${DB_TYPE}"
     if [[ $DB_TYPE == "postgresdb" ]]; then
-        log "数据库名称: ${POSTGRES_DB}"
-        log "数据库用户: ${POSTGRES_USER}"
-        log "数据库密码: ${POSTGRES_PASSWORD}"
+        log "数据库名称: ${DB_Database}"
+        log "数据库用户: ${DB_User}"
+        log "数据库密码: **********"
     fi
     log "配置文件位置: $PROFILE"
-    log "请保存好以上信息"
 }
 
 set_cronjob() {
