@@ -68,7 +68,9 @@ set_port() {
         read -p "请输入列表中的端口号 或 输入'add'来新增端口: " N8N_PORT
         if [[ $N8N_PORT == "add" ]]; then
             devil port add tcp random
-            read -p "请输入新增端口号: " N8N_PORT
+            log "当前可用端口列表："
+            devil port list
+            read -p "请输入新增端口号(必须在列表中): " N8N_PORT
             break
         elif [[ $N8N_PORT =~ ^[0-9]+$ ]] && [ $N8N_PORT -ge 1024 ] && [ $N8N_PORT -le 65535 ]; then
             # 检查端口是否已被占用
