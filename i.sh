@@ -30,14 +30,13 @@ cleanup() {
 trap cleanup ERR
 
 set_url() {
-    local username=$(whoami)
-    # 设置 WEBHOOK_URL
-    read -p "是否使用默认的 ${username}.serv00.net 作为 WEBHOOK_URL? [Y/n] " yn
+    local username
+    username=$(whoami)
+    read -r -p "是否使用默认的 ${username}.serv00.net 作为 WEBHOOK_URL? [Y/n] " yn
     case $yn in
         [Yy]* | "" ) WEBHOOK_URL="${username}.serv00.net";;
         [Nn]* ) 
-            read -p "请输入 WEBHOOK_URL: " WEBHOOK_URL
-            # 验证URL格式
+            read -r -p "请输入 WEBHOOK_URL: " WEBHOOK_URL
             if [[ ! $WEBHOOK_URL =~ ^https?:// ]]; then
                 error "URL 格式错误，必须以 http:// 或 https:// 开头"
             fi
@@ -60,20 +59,18 @@ set_www() {
 }
 
 set_port() {
-    # 设置 N8N_PORT
     log "当前可用端口列表："
     devil port list
     
     while true; do
-        read -p "请输入列表中的端口号 或 输入'add'来新增端口: " N8N_PORT
+        read -r -p "请输入列表中的端口号 或 输入'add'来新增端口: " N8N_PORT
         if [[ $N8N_PORT == "add" ]]; then
             devil port add tcp random
             log "当前可用端口列表："
             devil port list
-            read -p "请输入新增端口号(必须在列表中): " N8N_PORT
+            read -r -p "请输入新增端口号(必须在列表中): " N8N_PORT
             break
-        elif [[ $N8N_PORT =~ ^[0-9]+$ ]] && [ $N8N_PORT -ge 1024 ] && [ $N8N_PORT -le 65535 ]; then
-            # 检查端口是否已被占用
+        elif [[ $N8N_PORT =~ ^[0-9]+$ ]] && [ "$N8N_PORT" -ge 1024 ] && [ "$N8N_PORT" -le 65535 ]; then
             if devil port list | grep -q "^$N8N_PORT"; then
                 break
             else
@@ -92,7 +89,7 @@ set_db() {
     log "2) SQLite (简单，无需配置)"
     
     while true; do
-        read -p "请选择数据库类型 [1/2]: " db_choice
+        read -r -p "请选择数据库类型 [1/2]: " db_choice
         case $db_choice in
             1)
                 DB_TYPE=postgresdb
@@ -117,15 +114,24 @@ set_postgres() {
     log "当前数据库列表："
     devil pgsql list
     
-    # 设置数据库名称
-    while true; do
-        read -p "请输入新的数据库名称（仅允许字母、数字和下划线）: " DATABASE_NAME
-        if [[ $DATABASE_NAME =~ ^[a-zA-Z0-9_]+$ ]]; then
-            break
-        else
-            warn "数据库名称只能包含字母、数字和下划线"
-        fi
-    done
+    read -r -p "是否使用已有的旧的数据库? [Y/n] " yn
+    case $yn in
+        [Yy]* | "" ) 
+            log "使用已有的旧的数据库"
+            warn "请自行修改 $PROFILE 文件中的数据库配置"
+            return;;
+        [Nn]* ) 
+            # 设置数据库名称
+            while true; do
+                read -r -p "请输入新的数据库名称（仅允许字母、数字和下划线）: " DATABASE_NAME
+                if [[ $DATABASE_NAME =~ ^[a-zA-Z0-9_]+$ ]]; then
+                    break
+                else
+                    warn "数据库名称只能包含字母、数字和下划线"
+                fi
+            done
+            ;;
+    esac
     
     log "创建数据库: ${DATABASE_NAME}..."
     devil pgsql db del "${DATABASE_NAME}" 2>/dev/null || true
@@ -152,7 +158,7 @@ set_postgres() {
         fi
     fi
     
-    read -p "请再输入一次刚才设置的数据库密码，用于N8n连接数据库: " DB_PASSWORD
+    read -r -p "请再输入一次刚才设置的数据库密码，用于N8n连接数据库: " DB_PASSWORD
 
     log "数据库信息："
     DB_User="${DB_Database}"  # 用户名与数据库名相同
@@ -167,15 +173,11 @@ set_postgres() {
         devil pgsql extensions "${DB_Database}" "$ext" || warn "扩展 $ext 配置失败"
     done
     
-    # 验证数据库连接
-    # 临时设置 PGPASSWORD 环境变量
-    PGPASSWORD="${DB_PASSWORD}" psql -h "${DB_HOST}" -U "${DB_User}" -d "${DB_Database}" -c '\q' >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    # 修改数据库连接检查
+    if ! PGPASSWORD="${DB_PASSWORD}" psql -h "${DB_HOST}" -U "${DB_User}" -d "${DB_Database}" -c '\q' >/dev/null 2>&1; then
         warn "数据库连接测试失败，请检查数据库配置"
         devil pgsql db list
         exit 1
-    else
-        log "数据库连接测试成功"
     fi
     # 清除 PGPASSWORD 环境变量
     unset PGPASSWORD
@@ -183,9 +185,9 @@ set_postgres() {
 
 # 更新环境配置
 update_profile() {
-    # 添加或更新 PATH
+    # 使用双引号允许变量扩展
     if ! grep -q "^export PATH=.*\.npm-global/bin" "$PROFILE"; then
-        echo 'export PATH="$USER_HOME/.npm-global/bin:~/bin:$PATH"' >> "$PROFILE"
+        echo "export PATH=\"\$HOME/.npm-global/bin:\$HOME/bin:\$PATH\"" >> "$PROFILE"
     fi
     
     # 添加或更新其他环境变量
@@ -193,7 +195,7 @@ update_profile() {
 
 # N8N 配置
 export N8N_PORT=${N8N_PORT}
-export WEBHOOK_URL=${WEBHOOK_URL}
+export WEBHOOK_URL="https://${WEBHOOK_URL}"
 export N8N_HOST=0.0.0.0
 export N8N_PROTOCOL=https
 export GENERIC_TIMEZONE=Asia/Shanghai
@@ -228,9 +230,11 @@ EOF
 }
 
 re_source() {
+    # shellcheck source=/dev/null
     if [[ -f "$PROFILE" ]]; then
         source "$PROFILE"
     fi
+    # shellcheck source=/dev/null
     if [[ -f "$USER_HOME/.bashrc" ]]; then
         source "$USER_HOME/.bashrc"
     fi
@@ -253,31 +257,20 @@ show_completion_message() {
     log "退出脚本后，请运行以下命令使环境变量生效："
     warn "source ~/.bash_profile"
     warn "source ~/.bashrc"
+    log "详细使用方法请参考本项目 README.md"
 }
 
-set_cronjob() {
-    log "设置定时任务..."
-    cp reboot_run.sh "$USER_HOME/reboot_run.sh"
-    chmod +x "$USER_HOME/reboot_run.sh"
-    devil cron add "n8n" "$USER_HOME/reboot_run.sh" "*/3 * * * *"
-    log "定时任务设置完成"
-}
-
-# 检查并停止已存在的 n8n 进程
-check_n8n_process() {
-    log "检查 n8n 进程..."
-    if pgrep -f "n8n" > /dev/null; then
-        log "检测到 n8n 正在运行，尝试停止..."
-        pkill -f "n8n"
-        sleep 2
-        if pgrep -f "n8n" > /dev/null; then
-            error "无法停止正在运行的 n8n 进程，请手动终止后重试"
-        fi
+set_crontab() {
+    # 问题：没有检查是否已存在相同的定时任务
+    # 建议改进：
+    if crontab -l 2>/dev/null | grep -q "i.sh cronjob"; then
+        warn "定时任务已存在，跳过设置"
+        return 0
     fi
     
-    # 清理旧的日志文件
-    if [[ -f "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" ]]; then
-        mv "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log.old"
+    # 添加错误处理
+    if ! (crontab -l 2>/dev/null; echo "*/1 * * * * bash $USER_HOME/n8n-serv00/i.sh cronjob") | crontab -; then
+        error "设置定时任务失败"
     fi
 }
 
@@ -287,7 +280,7 @@ uninstall_old_n8n() {
         bash ./uninstall.sh
     else
         warn "卸载旧版本 n8n、pnpm等本程序安装的相关文件...？"
-        read -p "是否卸载? [Y/n] " yn
+        read -r -p "是否卸载? [Y/n] " yn
         case $yn in
             [Yy]* | "" ) bash ./uninstall.sh;;
             # 其他情况不卸载
@@ -301,19 +294,7 @@ create_log_dir() {
     mkdir -p "${USER_HOME}/n8n-serv00/n8n/logs"
 }
 
-# 主安装流程
-main() {
-    uninstall_old_n8n
-    set_port
-    set_url
-    set_www
-    set_db
-    
-    log "开始安装 n8n..."
-    
-    devil binexec on || error "无法设置 binexec"
-    re_source
-    
+install_pnpm() {
     mkdir -p "$USER_HOME/.npm-global" "$USER_HOME/bin"
     
     log "配置 npm..."
@@ -321,8 +302,8 @@ main() {
     ln -fs /usr/local/bin/node20 "$USER_HOME/bin/node"
     ln -fs /usr/local/bin/npm20 "$USER_HOME/bin/npm"
     
-    # 确保 PATH 正确设置
-    echo 'export PATH="$HOME/.npm-global/bin:$HOME/bin:$PATH"' >> "$PROFILE"
+    # 使用双引号允许变量扩展
+    echo "export PATH=\"\$HOME/.npm-global/bin:\$HOME/bin:\$PATH\"" >> "$PROFILE"
     re_source
     
     log "安装和配置 pnpm..."
@@ -338,10 +319,74 @@ main() {
     
     # 添加 pnpm 环境变量
     if ! grep -q "PNPM_HOME" "$PROFILE"; then
-        echo 'export PNPM_HOME="$HOME/.local/share/pnpm"' >> "$PROFILE"
-        echo 'export PATH="$PNPM_HOME:$PATH"' >> "$PROFILE"
+        echo "export PNPM_HOME=\"\$HOME/.local/share/pnpm\"" >> "$PROFILE"
+        echo "export PATH=\"\$PNPM_HOME:\$PATH\"" >> "$PROFILE"
     fi
     re_source
+}
+
+check_status() {
+    if pgrep -f "n8n start" > /dev/null 2>&1; then
+        log "n8n 正在运行"
+        return 0
+    else
+        warn "n8n 未在运行"
+        return 1
+    fi
+}
+
+# 添加启动函数
+start_n8n() {
+    create_log_dir
+    check_n8n_process
+    log "启动 n8n..."
+    nohup n8n start >> "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" 2>&1 &
+    sleep 10
+    if pgrep -f "n8n start" > /dev/null; then
+        log "n8n 已成功启动"
+        log "日志文件位置: ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
+    else
+        error "n8n 启动失败，请检查日志文件"
+    fi
+}
+
+# 添加停止函数
+stop_n8n() {
+    log "停止 n8n..."
+    if pgrep -f "n8n" > /dev/null; then
+        pkill -f "n8n"
+        sleep 3
+        if pgrep -f "n8n" > /dev/null; then
+            error "无法停止 n8n 进程"
+        else
+            log "n8n 已停止"
+        fi
+    else
+        log "n8n 未在运行"
+    fi
+}
+
+# 添加重启函数
+restart_n8n() {
+    stop_n8n
+    sleep 2
+    start_n8n
+}
+
+# 主安装流程 main
+main() {
+    uninstall_old_n8n
+    set_port
+    set_url
+    set_www
+    set_db
+    
+    log "开始安装 n8n..."
+    
+    devil binexec on || error "无法设置 binexec"
+    re_source
+    
+    install_pnpm
     
     log "安装 n8n..."
     
@@ -359,27 +404,118 @@ main() {
     
     update_profile
     re_source
-    show_completion_message
-    
+       
     # 创建日志目录
     create_log_dir
     
     # 检查并停止已存在的 n8n 进程
-    check_n8n_process
+    if check_status; then
+        stop_n8n
+    fi
     
     log "启动 n8n..."
-    # 后台启动 n8n 并重定向输出到日志文件
-    nohup n8n start >> "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" 2>&1 &
+    start_n8n
     
-    # 等待几秒检查是否成功启动
     sleep 15
-    if pgrep -f "n8n" > /dev/null; then
-        log "n8n 已成功在后台启动"
-        log "日志文件位置: ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
+    # 检查 n8n 是否运行，如果运行就输出状态
+    if check_status; then
+        log "n8n 已成功启动"
+        set_crontab
+        show_completion_message
     else
-        error "n8n 启动失败，请检查日志文件"
-    fi
+        error "n8n 启动失败.请查看 ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log 日志文件"
+    fi    
 }
 
-# 执行主程序
-main
+# 主程序 cronjob
+cronjob() {
+    # 使用大括号组合多个重定向
+    {
+        echo "当前时间: $(date)"
+        echo "当前用户: $(whoami)"
+        echo "当前目录: $(pwd)"
+        echo "which pnpm: $(which pnpm)"
+        echo "which node: $(which node)"
+        echo "which npm: $(which npm)"
+        echo "which n8n: $(which n8n)"
+        echo "n8n 状态: $(check_status)"
+        echo "crontab 状态: $(crontab -l)"
+        echo "============"
+    } >> "${USER_HOME}/n8n-serv00/n8n/logs/cronjob.log"
+    
+    # 检查 pnpm 是否安装
+    if ! pnpm -v > /dev/null 2>&1; then
+        log "pnpm 未安装"
+    else
+        log "pnpm 已安装"
+    fi
+
+    # 检查 n8n 是否安装
+    if ! n8n -v > /dev/null 2>&1; then
+        log "n8n 未安装"
+    else
+        log "n8n 已安装"
+    fi
+
+    # 检查 n8n 是否运行
+    if check_status; then
+        log "n8n 正在运行"
+    else
+        log "n8n 未运行"
+        start_n8n
+    fi
+    echo "============" >> "${USER_HOME}/n8n-serv00/n8n/logs/cronjob.log"
+    echo "当前时间: $(date)" >> "${USER_HOME}/n8n-serv00/n8n/logs/cronjob.log"
+    
+}
+
+# 在文件开头添加使用说明函数
+usage() {
+    cat << EOF
+使用方法:
+    bash i.sh [command]
+
+可用命令:
+    install     安装 n8n (默认命令)
+    start       启动 n8n
+    stop        停止 n8n
+    restart     重启 n8n
+    status      查看 n8n 状态
+    cronjob     设置定时任务
+    help        显示此帮助信息
+
+示例:
+    bash i.sh              # 执行完整安装
+    bash i.sh start        # 启动 n8n
+    bash i.sh stop         # 停止 n8n
+EOF
+}
+
+
+# 修改主程序入口
+case "${1:-install}" in
+    install)
+        main
+        ;;
+    start)
+        start_n8n
+        ;;
+    stop)
+        stop_n8n
+        ;;
+    restart)
+        restart_n8n
+        ;;
+    status)
+        check_status
+        ;;
+    cronjob)
+        cronjob
+        ;;
+    help|--help|-h)
+        usage
+        ;;
+    *)
+        error "未知命令: $1（使用 --help/-h 查看帮助）"
+        ;;
+esac

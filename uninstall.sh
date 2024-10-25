@@ -20,5 +20,6 @@ rm -rf /usr/home/$(whoami)/n8n
 rm -rf /usr/home/$(whoami)/.local/share/pnpm/global/5/node_modules
 rm -rf /usr/home/$(whoami)/.local/share/pnpm/global/5/.pnpm
 rm -rf /usr/home/$(whoami)/.n8n
+rm -rf /usr/home/$(whoami)/n8n-serv00/n8n/
 
 echo "卸载完成"

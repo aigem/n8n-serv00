@@ -57,3 +57,20 @@ source ~/.bashrc
 pnpm --version  # 应该显示 pnpm 版本
 n8n --version   # 应该显示 n8n 版本
 ```
+
+使用方法:
+    bash i.sh [command]
+
+可用命令:
+    install     安装 n8n (默认命令)
+    start       启动 n8n
+    stop        停止 n8n
+    restart     重启 n8n
+    status      查看 n8n 状态
+    cronjob     设置定时任务
+    help        显示此帮助信息
+
+示例:
+    bash i.sh              # 执行完整安装
+    bash i.sh start        # 启动 n8n
+    bash i.sh stop         # 停止 n8n
