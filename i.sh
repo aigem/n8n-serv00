@@ -249,6 +249,7 @@ show_completion_message() {
         log "数据库密码: **********"
     fi
     log "配置文件位置: $PROFILE"
+    log "日志文件位置: ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
     log "退出脚本后，请运行以下命令使环境变量生效："
     warn "source ~/.bash_profile"
     warn "source ~/.bashrc"
@@ -264,17 +265,45 @@ set_cronjob() {
 
 # 检查并停止已存在的 n8n 进程
 check_n8n_process() {
-    log "检查并停止已存在的 n8n 进程..."
+    log "检查 n8n 进程..."
     if pgrep -f "n8n" > /dev/null; then
-        log "停止运行中的 n8n 进程..."
+        log "检测到 n8n 正在运行，尝试停止..."
         pkill -f "n8n"
         sleep 2
+        if pgrep -f "n8n" > /dev/null; then
+            error "无法停止正在运行的 n8n 进程，请手动终止后重试"
+        fi
     fi
+    
+    # 清理旧的日志文件
+    if [[ -f "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" ]]; then
+        mv "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log.old"
+    fi
+}
+
+uninstall_old_n8n() {
+    # 使用 n8n -v 检查版本, 如果无法获取, 则卸载旧版本, 否则询问是否卸载
+    if ! n8n -v > /dev/null 2>&1; then
+        bash ./uninstall.sh
+    else
+        warn "卸载旧版本 n8n、pnpm等本程序安装的相关文件...？"
+        read -p "是否卸载? [Y/n] " yn
+        case $yn in
+            [Yy]* | "" ) bash ./uninstall.sh;;
+            # 其他情况不卸载
+            * ) log "不卸载，继续安装";;
+        esac
+    fi
+}
+
+# 在 main() 函数之前添加创建日志目录的函数
+create_log_dir() {
+    mkdir -p "${USER_HOME}/n8n-serv00/n8n/logs"
 }
 
 # 主安装流程
 main() {
-
+    uninstall_old_n8n
     set_port
     set_url
     set_www
@@ -312,7 +341,6 @@ main() {
         echo 'export PNPM_HOME="$HOME/.local/share/pnpm"' >> "$PROFILE"
         echo 'export PATH="$PNPM_HOME:$PATH"' >> "$PROFILE"
     fi
-    
     re_source
     
     log "安装 n8n..."
@@ -333,14 +361,25 @@ main() {
     re_source
     show_completion_message
     
+    # 创建日志目录
+    create_log_dir
+    
     # 检查并停止已存在的 n8n 进程
     check_n8n_process
     
     log "启动 n8n..."
-    n8n start
+    # 后台启动 n8n 并重定向输出到日志文件
+    nohup n8n start >> "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" 2>&1 &
+    
+    # 等待几秒检查是否成功启动
+    sleep 15
+    if pgrep -f "n8n" > /dev/null; then
+        log "n8n 已成功在后台启动"
+        log "日志文件位置: ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
+    else
+        error "n8n 启动失败，请检查日志文件"
+    fi
 }
 
 # 执行主程序
-bash ./uninstall.sh
 main
-
