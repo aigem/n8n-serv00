@@ -340,6 +340,7 @@ start_n8n() {
             log "日志文件位置: ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
         else
             error "n8n启动失败，请查看日志文件 ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
+            cat "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
         fi
     fi
 }
