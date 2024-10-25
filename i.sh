@@ -291,7 +291,9 @@ uninstall_old_n8n() {
 
 # 在 main() 函数之前添加创建日志目录的函数
 create_log_dir() {
-    mkdir -p "${USER_HOME}/n8n-serv00/n8n/logs"
+    if [[ ! -d "${USER_HOME}/n8n-serv00/n8n/logs" ]]; then
+        mkdir -p "${USER_HOME}/n8n-serv00/n8n/logs"
+    fi
 }
 
 install_pnpm() {
@@ -338,15 +340,18 @@ check_status() {
 # 添加启动函数
 start_n8n() {
     create_log_dir
-    check_n8n_process
-    log "启动 n8n..."
-    nohup n8n start >> "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" 2>&1 &
-    sleep 10
-    if pgrep -f "n8n start" > /dev/null; then
-        log "n8n 已成功启动"
-        log "日志文件位置: ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
+    # 检查 n8n 是否运行，如果运行就跳过启动，否则启动n8n
+    if check_status; then
+        return 0
     else
-        error "n8n 启动失败，请检查日志文件"
+        log "启动 n8n..."
+        nohup n8n start >> "${USER_HOME}/n8n-serv00/n8n/logs/n8n.log" 2>&1 &
+        sleep 10
+        if check_status; then
+            log "日志文件位置: ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
+        else
+            error "n8n启动失败，请查看日志文件 ${USER_HOME}/n8n-serv00/n8n/logs/n8n.log"
+        fi
     fi
 }
 
@@ -460,10 +465,11 @@ cronjob() {
 
     # 检查 n8n 是否运行
     if check_status; then
-        log "n8n 正在运行"
+        log "Happy n8n is running"
     else
-        log "n8n 未运行"
+        log "再启动一次 n8n"
         start_n8n
+        check_status
     fi
     echo "============" >> "${USER_HOME}/n8n-serv00/n8n/logs/cronjob.log"
     echo "当前时间: $(date)" >> "${USER_HOME}/n8n-serv00/n8n/logs/cronjob.log"
