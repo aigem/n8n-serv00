@@ -18,17 +18,6 @@ warn() {
     echo -e "\033[33m[WARN] $1\033[0m"
 }
 
-# 清理函数
-cleanup() {
-    log "清理可能的残留文件..."  
-    rm -rf "$USER_HOME/.local/share/pnpm/global/5/node_modules"
-    rm -rf "$USER_HOME/.local/share/pnpm/global/5/.pnpm"
-    rm -rf "$USER_HOME/.local/share/pnpm/store"
-    rm -rf "$USER_HOME/.npm-global/lib/node_modules/pnpm"
-}
-
-trap cleanup ERR
-
 set_url() {
     local username
     username=$(whoami)
