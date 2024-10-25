@@ -14,6 +14,8 @@
 - 提供完整的卸载功能
 - 一键脚本完成全流程，无需后台操作
 
+![n8n](https://raw.githubusercontent.com/aigem/n8n-serv00/refs/heads/main/%E4%B8%80%E9%94%AE%E5%85%8D%E8%B4%B9%E9%83%A8%E7%BD%B2%E8%87%AA%E5%8A%A8%E5%8C%96%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A5%9E%E5%99%A8N8N%20%E5%9C%A8%E5%8D%81%E5%B9%B4%E5%85%8D%E8%B4%B9%E4%B8%BB%E6%9C%BA%E4%B8%8A%E8%87%AA%E5%8A%A8%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B%20N8N%2Bserv00-%E5%B0%81%E9%9D%A2.jpg)
+
 ## 系统要求
 
 - serv00 免费主机
