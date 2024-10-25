@@ -411,7 +411,7 @@ main() {
     log "启动 n8n..."
     start_n8n
     
-    sleep 15
+    sleep 25
     # 检查 n8n 是否运行，如果运行就输出状态
     if check_status; then
         log "n8n 已成功启动"

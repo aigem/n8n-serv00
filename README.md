@@ -2,7 +2,7 @@
 
 这是一个用于在 serv00 免费主机上自动安装和配置 N8N 的脚本工具。
 
-【[视频教程](https://www.bilibili.com/video/BV1e6sVeEEhR/)】【[一键在Huggingface上使用N8N](https://www.bilibili.com/video/BV1e6sVeEEhR/)】
+【[视频教程](https://www.bilibili.com/video/BV1PZy2YdErb/)】【[一键在Huggingface上使用N8N](https://www.bilibili.com/video/BV1e6sVeEEhR/)】
 
 ## 功能特点
 
@@ -58,8 +58,10 @@ pnpm --version  # 应该显示 pnpm 版本
 n8n --version   # 应该显示 n8n 版本
 ```
 
-使用方法:
+## 安装后使用方法:
+```bash
     bash i.sh [command]
+```
 
 可用命令:
     install     安装 n8n (默认命令)
