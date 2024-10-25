@@ -429,6 +429,7 @@ main() {
 
 # 主程序 cronjob
 cronjob() {
+    create_log_dir
     # 使用大括号组合多个重定向
     {
         echo "当前时间: $(date)"
